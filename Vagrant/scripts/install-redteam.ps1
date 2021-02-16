@@ -82,6 +82,23 @@ $PSDefaultParameterValues = @{"Invoke-AtomicTest:PathToAtomicsFolder"="C:\Tools\
   Write-Host "$('[{0:HH:mm}]' -f (Get-Date)) Invoke-AtomicRedTeam was already installed. Moving On."
 }
 
+
+# download and unzip a copy of RTA
+# https://github.com/endgameinc/RTA/archive/master.zip
+Write-Host "$('[{0:HH:mm}]' -f (Get-Date)) Downloading Red Team Automation..."
+# GitHub requires TLS 1.2 as of 2/27
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$rtaDownloadUrl = "https://github.com/endgameinc/RTA/archive/master.zip"
+$rtaRepoPath = "C:\Users\vagrant\AppData\Local\Temp\rta.zip"
+if (-not (Test-Path $rtaRepoPath)) {
+  Invoke-WebRequest -Uri "$rtaDownloadUrl" -OutFile "$rtaRepoPath"
+  Expand-Archive -path "$rtaRepoPath" -destinationpath 'c:\Tools\Red Team Automation' -Force
+  Copy-Item -Path "c:\vagrant\hawk\msxsl.exe" -Destination 'c:\Tools\Red Team Automation\RTA-master\red_ttp\bin\'
+} else {
+  Write-Host "Red Team Automation was already installed. Moving On."
+}
+
+
 # Purpose: Downloads the latest release of PurpleSharpNewtonsoft.Json.dll
 If (-not (Test-Path "c:\Tools\PurpleSharp")) {
   New-Item -Path "c:\Tools\" -Name "PurpleSharp" -ItemType "directory"

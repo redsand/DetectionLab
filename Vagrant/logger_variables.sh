@@ -9,3 +9,4 @@ export MAXMIND_LICENSE=""
 # Then, simply paste below:
 export BASE64_ENCODED_SPLUNK_LICENSE=""
 
+export HAWK_LICENSE=""

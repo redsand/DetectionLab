@@ -1,5 +1,44 @@
 Vagrant.configure("2") do |config|
 
+  config.vm.define "hawk" do |cfg|
+    cfg.vm.box = "hawkio/hawkos7"
+    cfg.vm.hostname = "hawkio"
+    cfg.vm.provision :shell, path: "scripts/install-hawk.sh"
+    cfg.vm.provision :shell, path: "scripts/configure-linux.sh"
+    cfg.vm.network :private_network, ip: "192.168.38.111", gateway: "192.168.38.1", dns: "8.8.8.8"
+    cfg.vm.network :forwarded_port, host: 8443, guest: 8443
+    cfg.vm.network :forwarded_port, host: 80, guest: 80
+    cfg.vm.network :forwarded_port, host: 443, guest: 443
+    cfg.vm.network :forwarded_port, host: 8080, guest: 8080
+
+    cfg.vm.provider "vmware_desktop" do |v, override|
+      v.vmx["displayname"] = "hawkio"
+      v.memory = 4096
+      v.cpus = 4
+      v.gui = true
+    end
+
+    cfg.vm.provider "virtualbox" do |vb, override|
+      vb.gui = false
+      vb.name = "hawkio"
+      vb.customize ["modifyvm", :id, "--memory", 4096]
+      vb.customize ["modifyvm", :id, "--cpus", 4]
+      vb.customize ["modifyvm", :id, "--vram", "8"]
+      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+      vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
+      vb.customize ["setextradata", "global", "GUI/SuppressMessages", "all" ]
+
+      # attach 2nd data disk
+      file_to_disk = File.absolute_path('data_disk.vdi')
+      unless File.exist?(file_to_disk)
+        # 256 GB
+        vb.customize ['createhd', '--filename', file_to_disk, '--size', 256 * 1024]
+      end
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', file_to_disk]
+
+    end
+  end
+
   config.vm.define "logger" do |cfg|
     cfg.vm.box = "bento/ubuntu-18.04"
     cfg.vm.hostname = "logger"
@@ -10,11 +49,11 @@ Vagrant.configure("2") do |config|
       v.vmx["displayname"] = "logger"
       v.memory = 4096
       v.cpus = 2
-      v.gui = true
+      v.gui = false
     end
 
     cfg.vm.provider "virtualbox" do |vb, override|
-      vb.gui = true
+      vb.gui = false
       vb.name = "logger"
       vb.customize ["modifyvm", :id, "--memory", 4096]
       vb.customize ["modifyvm", :id, "--cpus", 2]
@@ -63,6 +102,8 @@ Vagrant.configure("2") do |config|
     cfg.vm.provision "reload"
     cfg.vm.provision "shell", path: "scripts/provision.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/download_palantir_wef.ps1", privileged: false
+    cfg.vm.provision "shell", path: "scripts/download_hawk_vttac.ps1", privileged: false
+    cfg.vm.provision "shell", path: "scripts/install-vttac.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-utilities.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-redteam.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-choco-extras.ps1", privileged: false
@@ -85,12 +126,12 @@ Vagrant.configure("2") do |config|
       v.vmx["displayname"] = "dc.windomain.local"
       v.memory = 3072
       v.cpus = 2
-      v.gui = true
+      v.gui = false
       v.enable_vmrun_ip_lookup = false
     end
 
     cfg.vm.provider "virtualbox" do |vb, override|
-      vb.gui = true
+      vb.gui = false
       vb.name = "dc.windomain.local"
       vb.default_nic_type = "82545EM"
       vb.customize ["modifyvm", :id, "--memory", 3072]
@@ -133,6 +174,8 @@ Vagrant.configure("2") do |config|
     cfg.vm.provision "shell", path: "scripts/download_palantir_wef.ps1", privileged: false
     cfg.vm.provision "shell", inline: 'wevtutil el | Select-String -notmatch "Microsoft-Windows-LiveId" | Foreach-Object {wevtutil cl "$_"}', privileged: false
     cfg.vm.provision "shell", path: "scripts/install-wefsubscriptions.ps1", privileged: false
+    cfg.vm.provision "shell", path: "scripts/download_hawk_vttac.ps1", privileged: false
+    cfg.vm.provision "shell", path: "scripts/install-vttac.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-splunkuf.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-windows_ta.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-utilities.ps1", privileged: false
@@ -152,12 +195,12 @@ Vagrant.configure("2") do |config|
       v.vmx["displayname"] = "wef.windomain.local"
       v.memory = 2048
       v.cpus = 2
-      v.gui = true
+      v.gui = false
       v.enable_vmrun_ip_lookup = false
     end
 
     cfg.vm.provider "virtualbox" do |vb, override|
-      vb.gui = true
+      vb.gui = false
       vb.name = "wef.windomain.local"
       vb.default_nic_type = "82545EM"
       vb.customize ["modifyvm", :id, "--memory", 2048]
@@ -198,6 +241,8 @@ Vagrant.configure("2") do |config|
     cfg.vm.provision "shell", path: "scripts/download_palantir_wef.ps1", privileged: false
     cfg.vm.provision "shell", inline: 'wevtutil el | Select-String -notmatch "Microsoft-Windows-LiveId" | Foreach-Object {wevtutil cl "$_"}', privileged: false
     cfg.vm.provision "shell", path: "scripts/install-utilities.ps1", privileged: false
+    cfg.vm.provision "shell", path: "scripts/download_hawk_vttac.ps1", privileged: false
+    cfg.vm.provision "shell", path: "scripts/install-vttac.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-redteam.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-choco-extras.ps1", privileged: false
     cfg.vm.provision "shell", path: "scripts/install-osquery.ps1", privileged: false
@@ -212,12 +257,12 @@ Vagrant.configure("2") do |config|
       v.vmx["gui.viewModeAtPowerOn"] = "windowed"
       v.memory = 2048
       v.cpus = 1
-      v.gui = true
+      v.gui = false
       v.enable_vmrun_ip_lookup = false
     end
 
     cfg.vm.provider "virtualbox" do |vb, override|
-      vb.gui = true
+      vb.gui = false
       vb.name = "win10.windomain.local"
       vb.default_nic_type = "82545EM"
       vb.customize ["modifyvm", :id, "--memory", 2048]

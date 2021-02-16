@@ -556,6 +556,33 @@ install_guacamole() {
   systemctl start tomcat8
 }
 
+
+install_hawk_tunnel() {
+  # deb install pkgs
+  apt -y install wget
+  wget http://www.hawkdefense.com/repos/hawk/deb/hawkcore_3.4.2-1_amd64.deb http://www.hawkdefense.com/repos/hawk/deb/radixdb_20190628-1_amd64.deb http://www.hawkdefense.com/repos/hawk/deb/hawk-tunneld_5.2.2-2_amd64.deb
+  apt -y install libmemcached11 libmysqlclient20 libodbc1 odbcinst1debian2 libjansson4
+
+  dpkg -i hawkcore_3.4.2-1_amd64.deb radixdb_20190628-1_amd64.deb hawk-tunneld_5.2.2-2_amd64.deb
+  rm -f *.deb
+
+  ldconfig
+
+  systemctl daemon-reload
+
+  systemctl enable hawk-tunneld
+
+  systemctl start hawk-tunneld
+
+  sleep 2
+
+  ip link set dev tun0 up
+
+  ip link set dev tun1 up
+
+}
+
+
 postinstall_tasks() {
   # Include Splunk and Zeek in the PATH
   echo export PATH="$PATH:/opt/splunk/bin:/opt/zeek/bin" >>~/.bashrc
@@ -569,6 +596,7 @@ main() {
   modify_motd
   test_prerequisites
   fix_eth1_static_ip
+  install_hawk_tunnel
   install_splunk
   download_palantir_osquery_config
   install_fleet_import_osquery_config
