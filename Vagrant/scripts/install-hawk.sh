@@ -36,7 +36,7 @@ nohup hawk-install-web &
 
 rm -f /tmp/config.$$
 
-cp /usr/share/zoneinfo/GMT /etc/localtime
+cp /usr/share/zoneinfo/UTC /etc/localtime
 
 yum -y install ntp
 
